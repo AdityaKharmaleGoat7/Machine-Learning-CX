@@ -1,0 +1,42 @@
+pd.read_csv('aug_train.csv',index_col='enrollee_id') 
+#default pandas index column replaced by enrollee_id
+
+pd.read_csv('test.csv',header=1) #when header is shown as values
+
+#when you want to import only spacific columns
+pd.read_csv('aug_train.csv',usecols['enrollee_id','gender','education_level'])
+
+#to skip rows or columns
+pd.read_csv('aug_train.csv',nrows=100)
+
+# when encoding of text is differant then you have to give encoding of that text
+pd.read_csv('zomato.csv',encoding='latin-1')
+
+# sometimes row contain more values then colun so error_bad_lines removes theose rows 
+pd.read_csv('BX-Books.csv', sep=';', encoding="latin-1",error_bad_lines=False)
+
+#when you want to convert to integer
+pd.read_csv('aug_train.csv',dtype={'target':int}).info()
+
+# sometime dataset is very large and cannt load whole dataset in machine so we 
+#can convert in to batches and by using loop we can work on that
+dfs = pd.read_csv('aug_train.csv',chunksize=5000)
+for chunks in dfs:
+    print(chunks.shape)
+
+
+
+#Graphs
+fig, (ax1, ax2) = plt.subplots(ncols=2, figsize=(12, 5))
+ax1.scatter(X_train['Age'], X_train['EstimatedSalary'])
+ax1.set_title("Before Scaling")
+ax2.scatter(X_train_scaled['Age'], X_train_scaled['EstimatedSalary'],color='red')
+ax2.set_title("After Scaling")
+# fig
+
+
+
+
+
+
+

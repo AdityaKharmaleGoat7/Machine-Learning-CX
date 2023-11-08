@@ -1,0 +1,12 @@
+# extract the last bit of ticket as number
+df['ticket_num'] = df['Ticket'].apply(lambda s: s.split()[-1])
+df['ticket_num'] = pd.to_numeric(df['ticket_num'],errors='coerce',downcast='integer')
+
+# extract the first part of ticket as category
+df['ticket_cat'] = df['Ticket'].apply(lambda s: s.split()[0])
+df['ticket_cat'] = np.where(df['ticket_cat'].str.isdigit(), np.nan,df['ticket_cat'])
+
+date['semester'] = np.where(date['quarter'].isin([1,2]), 1, 2)
+
+
+X_train = np.insert(X_train,0,1,axis=1)# add col of 1 at starting 

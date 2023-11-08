@@ -1,0 +1,170 @@
+from sklearn.linear_model import Perceptron
+clf1=Perceptron()
+
+
+import tensorflow
+from tensorflow import keras
+from keras import Sequential
+from keras.layers import Dense,Flatten,Dropout,MaxPooling2D
+model = Sequential()
+model.add(Dense(10,activation='sigmoid',input_dim=2))
+model.add(Dense(10,activation='sigmoid'))
+model.add(Dense(1, activation='sigmoid'))
+
+from tensorflow.keras import regularizers
+model2.add(Dense(128,input_dim=2, activation="relu",kernel_regularizer=tensorflow.keras.regularizers.l1(0.001)))
+model.add(Dense(10,activation='relu',kernel_initializer='he_normal'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=2, padding='valid'))
+
+
+model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+model.fit(X_train, y_train, epochs = 100)
+model1.fit(X_train, y_train, epochs=2000, validation_split = 0.2,verbose=0)
+y_prob = model.predict(X_test)
+
+model.get_weights()[0]
+
+#Early stopping
+from tensorflow.keras.callbacks import EarlyStopping
+callback = EarlyStopping(
+    monitor="val_loss",
+    min_delta=0.0001,
+    patience=50,
+    verbose=1,
+    mode="auto",
+    baseline=None,
+    restore_best_weights=False
+)
+history = model.fit(X_train, y_train, validation_data=(X_test, y_test), epochs=3500, callbacks=callback)
+
+### evaluate the model
+# The evaluate function is typically used to assess the performance of a trained model by calculating one or more metrics, such as accuracy, loss, or any other relevant metric defined during the model compilation. The function compares the model's predictions on the training data with the true labels and computes the specified metrics.
+_, train_mse = model.evaluate(X_train, y_train, verbose=0)   
+_, test_mse = model.evaluate(X_test, y_test, verbose=0)
+print('Train: {}, Test: {}'.format(train_mse, test_mse))
+
+
+
+
+
+
+#pretrain models
+from tensorflow.keras.applications.resnet50 import ResNet50, preprocess_input, decode_predictions
+model = ResNet50(weights='imagenet')
+x = preprocess_input(x)
+preds = model.predict(x)
+
+from tensorflow.keras.applications.vgg16 import VGG16,preprocess_input
+model = VGG16(weights='imagenet', include_top=False)
+
+from tensorflow.keras.applications.vgg19 import VGG19,preprocess_input
+from tensorflow.keras.models import Model
+
+
+###weighted NN
+weights_assigned={0:1,1:550} #in this dataset 0 is 550 times more than 1 so here we assign weight of 1 is 550 times 0's weight
+model.fit(x_train,y_train,class_weight=weights_assigned,epochs=10)
+
+
+
+
+###RNN
+from keras.layers import Dense,SimpleRNN
+model= Sequential()
+model.add(SimpleRNN(3,input_shape=(4,5))) #4 is time step and 5 is input features
+model.add(Dense(1,activation='sigmoid'))
+model.summary()
+
+
+##time series with RNN
+model = Sequential()                                                # timestep  3 ,   1
+model.add(LSTM(50, activation='relu', return_sequences=True, input_shape=(n_steps ,  n_features)))
+model.add(LSTM(50, activation='relu'))
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mse')
+
+model.fit(X, y, epochs=300, verbose=1)
+
+x_input = x_input.reshape((1, n_steps, n_features))
+yhat = model.predict(x_input)
+
+
+### Hyperparameter Tuning 
+1)appropriate optimizer
+import keras_tuner as kt
+
+def build_model(hp):  ## hp = hyper parameter
+    model=Sequential()
+    model.add(Dense(32, activation='relu',input_dim=8))
+    model.add(Dense(1, activation='sigmoid'))
+    optimizer=hp.Choice('optimizer',values = ['adam','sgd','rmsprop','adadelta'])
+    model.compile(optimizer=optimizer,loss='binary_crossentropy',metrics=['accuracy'])
+    return model
+
+tuner = kt.RandomSearch(build_model, #function name
+                       objective='val_accuracy',  #objective what you wnat to do
+                       max_trials=5,
+                       directory='mydir1(CX_39 Keras Tuner for Hyperparameter Tuning)',
+                       project_name='p1')
+
+#There are many features in tuner object
+tuner.search(x_train,y_train,epochs=5,validation_data=(x_test,y_test))
+tuner.get_best_hyperparameters()[0].values
+model = tuner.get_best_models(num_models=1)[0]
+model.summary()
+model.fit(x_train,y_train,batch_size=32,epochs=100,initial_epoch=6,validation_data=(x_test,y_test))
+#initial epoch means it start with previouses epochs
+
+2)Number of nodes in layer
+def build_model(hp):
+    model=Sequential()
+    units =hp.Int('units',min_value=8,max_value=128,step=8)
+    model.add(Dense(units=units,activation='relu',input_dim=8))
+    model.add(Dense(1,activation='sigmoid'))
+    model.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
+    return model           ## Here we use adam because adam gives best result in this data as shown above
+
+3)number of Layers
+def build_model(hp):
+    model=Sequential()
+    model.add(Dense(72,activation='relu',input_dim=8))
+    for i in range(hp.Int('num_layers',min_value=1,max_value=10)): 
+        model.add(Dense(72,activation='relu'))
+        
+    model.add(Dense(1,activation='sigmoid'))
+    model.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
+    return model     
+
+4) All in one
+def build_model(hp):
+    model=Sequential() 
+    counter=0
+    for i in range(hp.Int('num_layers',min_value=1,max_value=10)):
+        if counter == 0:
+            model.add(Dense(hp.Int('units'+str(i),min_value=8,max_value=128,step=8),activation=hp.Choice('activation'+str(i),values=['relu','tanh','sigmoid']),input_dim=8))
+        else:
+            model.add(Dense(hp.Int('units'+str(i),min_value=8,max_value=128,step=8),activation=hp.Choice('activation'+str(i),values=['relu','tanh','sigmoid'])))
+        counter+=1
+    model.add(Dense(1,activation='sigmoid'))
+    model.compile(optimizer=hp.Choice('optimizer',values=['rmsprop','adam','sgd','nadam','adadelta']),
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    return model   
+
+5)can also add dropout   
+def build_model(hp):
+    model=Sequential() 
+    counter=0
+    for i in range(hp.Int('num_layers',min_value=1,max_value=10)):
+        if counter == 0:
+            model.add(Dense(hp.Int('units'+str(i),min_value=8,max_value=128,step=8),activation=hp.Choice('activation'+str(i),values=['relu','tanh','sigmoid']),input_dim=8))
+            model.add(Dropout(hp.Choice('dropout' + str(i), values=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])))
+        else:
+            model.add(Dense(hp.Int('units'+str(i),min_value=8,max_value=128,step=8),activation=hp.Choice('activation'+str(i),values=['relu','tanh','sigmoid'])))
+            model.add(Dropout(hp.Choice('dropout' + str(i), values=[0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9])))
+        counter+=1
+    model.add(Dense(1,activation='sigmoid'))
+    model.compile(optimizer=hp.Choice('optimizer',values=['rmsprop','adam','sgd','nadam','adadelta']),
+                  loss='binary_crossentropy',
+                  metrics=['accuracy'])
+    return model

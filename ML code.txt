@@ -1,0 +1,227 @@
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split,cross_val_score
+x_train,x_test,y_train,y_test = train_test_split(x,y,test_size=0.1)
+cross_val_score(DecisionTreeClassifier(),X,y,cv=10,scoring='accuracy')
+
+from sklearn.preprocessing import StandardScaler
+scaler=StandardScaler()
+x_train=scaler.fit_transform(x_train)
+x_test=scaler.transform(x_test)
+X_train_scaled = pd.DataFrame(X_train_scaled, columns=X_train.columns) #convert into dataframe
+
+from sklearn.preprocessing import FunctionTransformer
+trf = FunctionTransformer(func=np.log1p)
+
+from sklearn.preprocessing import PowerTransformer
+pt = PowerTransformer(method='box-cox') #by default yeo-Johnson
+X_transformed = pt.fit_transform(X+0.0000001)
+
+from sklearn.preprocessing import OrdinalEncoder
+oe = OrdinalEncoder(categories=[['Poor','Average','Good'],['School','UG','PG']])
+oe.fit(X_train)                 # 2    ,   1  ,    0    #    2     , 1  ,  0
+oe.categories_
+
+pd.get_dummies(df,columns=['fuel','owner'])#onehot (nominal) encoding
+
+from sklearn.preprocessing import OneHotEncoder
+ohe = OneHotEncoder(drop='first',sparse=False,dtype=np.int32) #sparse False gives array and true gives sparse matrix,dtype=int32 gives int values X_train
+X_train_new = ohe.fit_transform(X_train[['fuel','owner']]) #fit only on train
+
+from sklearn.compose import ColumnTransformer
+
+transformer = ColumnTransformer(transformers=[
+    ('tnf1',SimpleImputer(),['fever']),
+    ('tnf2',OrdinalEncoder(categories=[['Mild','Strong']]),['cough']),
+    ('tnf3',OneHotEncoder(sparse=False,drop='first'),['gender','city'])
+],remainder='passthrough')
+transformer.fit_transform(X_train)
+
+
+# imputation transformer
+trf1 = ColumnTransformer([
+    ('impute_age',SimpleImputer(),[2]),
+    ('impute_embarked',SimpleImputer(strategy='most_frequent'),[6])
+],remainder='passthrough')
+# one hot encoding
+trf2 = ColumnTransformer([
+    ('ohe_sex_embarked',OneHotEncoder(sparse=False,handle_unknown='ignore'),[1,6])
+],remainder='passthrough')
+# Scaling
+trf3 = ColumnTransformer([
+    ('scale',MinMaxScaler(),slice(0,10))#slice means from range (here 0 to 10)
+])
+# Feature selection
+trf4 = SelectKBest(score_func=chi2,k=8)
+# train the model
+trf5 = DecisionTreeClassifier()
+pipe = Pipeline([
+    ('trf1',trf1),
+    ('trf2',trf2),
+    ('trf3',trf3),
+    ('trf4',trf4),
+    ('trf5',trf5) #left name ,right pipeline
+])
+pipe.fit(X_train,y_train)
+y_pred = pipe.predict(X_test)
+
+# cross validation using cross_val_score
+from sklearn.model_selection import cross_val_score
+cross_val_score(pipe, X_train, y_train, cv=5, scoring='accuracy').mean()
+
+trf5 = DecisionTreeClassifier()
+# gridsearchcv
+params = {
+    'trf5__max_depth':[1,2,3,4,5,None]
+}
+from sklearn.model_selection import GridSearchCV
+grid = GridSearchCV(pipe, params, cv=5, scoring='accuracy')
+grid.fit(X_train, y_train)
+
+
+numerical_features = ['Age', 'Fare']
+numerical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='median')),
+    ('scaler', StandardScaler())
+])
+categorical_features = ['Embarked', 'Sex']
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),
+    ('ohe',OneHotEncoder(handle_unknown='ignore'))
+])
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_features),
+        ('cat', categorical_transformer, categorical_features)
+    ]
+)
+clf = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('classifier', LogisticRegression())
+])
+
+
+
+
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+le.fit(y_train)
+le.classes_
+
+# Applying Binarization
+from sklearn.preprocessing import Binarizer
+trf = ColumnTransformer([
+    ('bin',Binarizer(copy=False),['family']) #for change in existing column copy=False
+],remainder='passthrough')
+
+
+from sklearn.impute import MissingIndicator,SimpleImputer
+mi = MissingIndicator()
+mi.fit(X_train)
+X_train_missing = mi.transform(X_train)
+X_test_missing = mi.transform(X_test)
+X_train['Age_NA'] = X_train_missing
+X_test['Age_NA'] = X_test_missing
+si = SimpleImputer()
+X_train_trf2 = si.fit_transform(X_train)
+X_test_trf2 = si.transform(X_test)
+
+## SimpleImputer is also contain MissingIndicator so no need to use MissingIndicator saparately
+si = SimpleImputer(add_indicator=True)
+X_train = si.fit_transform(X_train)
+X_test = si.transform(X_test)
+
+
+from sklearn.impute import KNNImputer,SimpleImputer
+knn = KNNImputer(n_neighbors=3,weights='distance')
+
+# Finding the IQR
+percentile25 = df['placement_exam_marks'].quantile(0.25)
+
+
+
+
+from sklearn.linear_model import LogisticRegression
+clf=LogisticRegression()
+clf.fit(x_train,y_train)
+
+from sklearn.linear_model import Ridge, Lasso, ElasticNet, LogisticRegression
+reg = Ridge(alpha=10)   //L = Lasso(alpha=10)//reg = ElasticNet(alpha=0.005,l1_ratio=0.9)
+reg.fit(X_train,y_train)
+y_pred = reg.predict(X_test)
+
+from sklearn.linear_model import SGDRegressor
+reg = SGDRegressor(penalty='l2',max_iter=500,eta0=0.1,learning_rate='constant',alpha=0.001)
+
+#softmax regression multiclass logistic classification
+clf = LogisticRegression(multi_class='multinomial')
+from mlxtend.plotting import plot_decision_regions
+plot_decision_regions(x_train, y_train.values, clf=clf, legend=2) #.values convet numpy array
+
+from sklearn.metrics import accuracy_score
+accuracy_score(y_test,y_pred)
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 6. Deploy the model
+import pickle  #pickle convert object into file
+pickle.dump(clf,open('model.pkl','wb'))
+
+
+import pickle
+pickle.dump(pipe,open('pipe.pkl','wb'))
+
+##predict using pipeline
+pipe = pickle.load(open('pipe.pkl','rb'))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
